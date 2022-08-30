@@ -1,0 +1,49 @@
+version: '3'
+services:
+  server:
+    build: .
+    restart: always
+    image: node:18.7
+    user: node
+    ports:
+      - "8082:80/tcp"
+      - target: 41234
+        published: 41234
+        protocol: udp
+        mode: host
+    volumes:
+      - "./src:/home/node/app/src"
+    command: npm run "${BUILD_COMMAND}"
+    networks:
+      - warhammer_network
+  mongodb:
+    image: mongo
+    restart: always
+    volumes:
+      - "./mongo-data:/data/db"
+      - "./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro"
+    environment:
+      MONGO_INITDB_DATABASE: "${DATABASE_NAME}"
+      MONGO_INITDB_ROOT_USERNAME: "${DATABASE_USERNAME}"
+      MONGO_INITDB_ROOT_PASSWORD: "${DATABASE_PASSWORD}"
+    networks:
+      - warhammer_network
+  mongo-admin:
+    image: mongo-express
+    ports:
+      - "8081:8081"
+    restart: always
+    environment:
+      ME_CONFIG_MONGODB_AUTH_DATABASE: "${DATABASE_NAME}"
+      ME_CONFIG_MONGODB_AUTH_USERNAME: "${DATABASE_USERNAME}"
+      ME_CONFIG_MONGODB_AUTH_PASSWORD: "${DATABASE_PASSWORD}"
+      ME_CONFIG_MONGODB_SERVER: "warhammer_mongodb_1"
+    networks:
+      - warhammer_network
+volumes:
+  mongo-data:
+    driver: local
+networks:
+  warhammer_network:
+    external:
+      name: warhammer_network
